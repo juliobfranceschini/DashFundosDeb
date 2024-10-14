@@ -77,7 +77,7 @@ dados_fundos_total['Percentual Aplicação'] = (dados_fundos_total['Valor Mercad
 st.sidebar.header("Filtros - Fundos")
 cnpj_filtro = st.sidebar.text_input("Filtrar por CNPJ do Fundo:")
 tipo_aplicacao_filtro = st.sidebar.multiselect("Filtrar por Tipo de Aplicação:",
-                                               options=dados_fundos_total['Tipo Fundo'].unique())
+                                               options=dados_fundos_total['Tipo Aplicação'].unique())
 
 # Aplicar os filtros nos fundos
 dados_filtrados = dados_fundos_total
