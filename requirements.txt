@@ -1,4 +1,6 @@
-pandas
 streamlit
+pandas
+matplotlib
 requests
 xlsxwriter
+openpyxl
