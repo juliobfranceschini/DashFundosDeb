@@ -94,16 +94,15 @@ if uploaded_file is not None:
         'Valor Venda Negociada', 'Data Confidencial Aplicação', 'Risco Emissor', 'Código Selic', 
         'Data Início Vigência', 'Código ISIN', 'Data Fim Vigência'
     ]
-    
-    # Remover as colunas indesejadas
-    df = df.drop(columns=colunas_para_excluir)
+
+    # Remover as colunas indesejadas com 'errors=ignore' para evitar erros se a coluna não existir
+    df = df.drop(columns=colunas_para_excluir, errors='ignore')
 
     # Exibir todas as colunas do DataFrame para ajudar na identificação
     st.write("Colunas disponíveis no arquivo:")
     st.write(df.columns)
 
     # Certifique-se de que 'filtro_cnpj' seja definido antes de ser usado no merge
-    # Exemplo: Aqui estamos filtrando por um CNPJ específico. Você pode permitir ao usuário selecionar um CNPJ.
     cnpj_especifico = '34.474.989/0001-97'  # Exemplo de CNPJ
 
     # Verifique se a coluna "CNPJ Fundo" existe no DataFrame antes de usá-la
