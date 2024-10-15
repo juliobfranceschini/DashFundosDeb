@@ -1,7 +1,24 @@
 import streamlit as st
 import pandas as pd
-import xlsxwriter
+import requests
+import zipfile
+import io
 import re
+
+# Função para baixar e carregar os dados a partir da URL
+def carregar_dados_via_url(ano, mes):
+    url = f'https://dados.cvm.gov.br/dados/FI/DOC/CDA/DADOS/cda_fi_{ano}{mes}.zip'
+    response = requests.get(url)
+    
+    # Abrir o arquivo ZIP da CVM
+    dataframes = []
+    with zipfile.ZipFile(io.BytesIO(response.content), 'r') as arquivo_zip:
+        for file_name in arquivo_zip.namelist():
+            df = pd.read_csv(arquivo_zip.open(file_name), sep=';', encoding='ISO-8859-1')
+            dataframes.append(df)
+
+    dados_fundos_total = pd.concat(dataframes, ignore_index=True)
+    return dados_fundos_total
 
 # Função para extrair apenas os números da coluna "Remuneração"
 def extrair_numeros(remuneracao):
@@ -18,13 +35,26 @@ def media_ponderada(grupo, valor_col, peso_col):
 # Título do Dashboard
 st.title("Dashboard de Debêntures")
 
-# Upload do arquivo Excel
-uploaded_file = st.file_uploader("Carregar arquivo Excel", type=["xls", "xlsx"])
+# Opção de escolher entre carregar arquivo manualmente ou usar URL
+opcao_dados = st.radio("Como você deseja carregar os dados?", ("Carregar arquivo Excel", "Baixar dados da CVM"))
 
-if uploaded_file is not None:
-    # Carregar o DataFrame a partir do arquivo Excel
-    df = pd.read_excel(uploaded_file)
+if opcao_dados == "Carregar arquivo Excel":
+    # Upload do arquivo Excel
+    uploaded_file = st.file_uploader("Carregar arquivo Excel", type=["xls", "xlsx"])
+    if uploaded_file is not None:
+        df = pd.read_excel(uploaded_file)
+else:
+    # Entrar com o ano e mês para baixar os dados da URL
+    ano = st.selectbox("Selecione o ano:", ["2024", "2023"])
+    mes = st.selectbox("Selecione o mês:", ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"])
+    
+    # Botão para baixar os dados
+    if st.button("Baixar dados"):
+        df = carregar_dados_via_url(ano, mes)
+        st.write("Dados baixados com sucesso!")
 
+# Continuar apenas se os dados forem carregados
+if 'df' in locals():
     # Renomear as colunas com novos nomes mais descritivos
     df = df.rename(columns={
         'TP_FUNDO': 'Tipo Fundo',
@@ -98,10 +128,6 @@ if uploaded_file is not None:
     # Remover as colunas indesejadas com 'errors=ignore' para evitar erros se a coluna não existir
     df = df.drop(columns=colunas_para_excluir, errors='ignore')
 
-    # Exibir todas as colunas do DataFrame para ajudar na identificação
-    st.write("Colunas disponíveis no arquivo:")
-    st.write(df.columns)
-
     # Certifique-se de que 'filtro_cnpj' seja definido antes de ser usado no merge
     cnpj_especifico = '34.474.989/0001-97'  # Exemplo de CNPJ
 
@@ -120,24 +146,9 @@ if uploaded_file is not None:
             # Modificar a coluna 'Remuneração' para extrair os números
             df_combinado['Remuneração'] = df_combinado['Remuneração'].apply(extrair_numeros)
 
-            # Continuar com a lógica de remover colunas, cálculo de percentual e ordenação
-
             # Remover colunas que contenham apenas valores NaN ou apenas zeros
             df_combinado = df_combinado.dropna(axis=1, how='all')
             df_combinado = df_combinado.loc[:, (df_combinado != 0).any(axis=0)]
 
             # Calcular o percentual de cada 'Valor Mercado Posição Final' com relação à soma total
-            soma_valor_mercado = df_combinado['Valor Mercado Posição Final'].sum()
-            df_combinado['% Valor Mercado'] = df_combinado['Valor Mercado Posição Final'] / soma_valor_mercado
-
-            # Ordenar o DataFrame de forma decrescente com base na coluna 'Valor Mercado Posição Final'
-            df_combinado = df_combinado.sort_values(by='Valor Mercado Posição Final', ascending=False)
-
-            # Exibir o DataFrame no Streamlit
-            st.write("### Dados Filtrados:")
-            st.dataframe(df_combinado)
-
-        else:
-            st.write("Nenhum fundo com o CNPJ especificado foi encontrado.")
-    else:
-        st.write("A coluna 'CNPJ Fundo' não foi encontrada no arquivo.")
+            soma_valor_mercado = df_combinado['
