@@ -150,5 +150,6 @@ if 'df' in locals():
             df_combinado = df_combinado.dropna(axis=1, how='all')
             df_combinado = df_combinado.loc[:, (df_combinado != 0).any(axis=0)]
 
-            # Calcular o percentual de cada 'Valor Mercado Posição Final' com relação à soma total
-            soma_valor_mercado = df_combinado['
+# Calcular o percentual de cada 'Valor Mercado Posição Final' com relação à soma total
+            soma_valor_mercado = df_combinado['Valor Mercado Posição Final'].sum()
+            df_combinado['% Valor Mercado'] = df_combinado['Valor Mercado Posição Final'] / soma_valor_mercado
